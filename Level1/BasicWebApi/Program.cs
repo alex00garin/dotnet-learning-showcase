@@ -9,6 +9,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Middleware
@@ -18,6 +29,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors();
 app.UseHttpsRedirection();
 
 // Endpoint
@@ -25,7 +37,7 @@ app.MapGet("/weatherforecast", async (IHttpClientFactory httpClientFactory, stri
 {
     var httpClient = httpClientFactory.CreateClient();
 
-    var geocodingUrl = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(city)}&count=1";
+    var geocodingUrl = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(city ?? "Berlin")}&count=1";
     var geocodingResponse = await httpClient.GetStringAsync(geocodingUrl);
 
     using var geocodingDoc = JsonDocument.Parse(geocodingResponse);
@@ -79,11 +91,16 @@ app.MapGet("/weatherforecast", async (IHttpClientFactory httpClientFactory, stri
 })
 .WithName("GetWeatherForecast");
 
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok("Healthy"))
+   .WithName("HealthCheck");
+
 // Console info
 Console.WriteLine("\nAvailable Endpoints:");
 Console.WriteLine("GET /weatherforecast?city={cityName}");
 Console.WriteLine("GET /swagger");
 Console.WriteLine("GET /swagger/v1/swagger.json");
+Console.WriteLine("GET /health");
 
 app.Run();
 

@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Level1/BasicWebApi/Dockerfile"
+
+[deploy]
+startCommand = "dotnet BasicWebApi.dll"
+healthcheckPath = "/weatherforecast"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10 
