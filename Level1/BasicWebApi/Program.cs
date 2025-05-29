@@ -32,6 +32,9 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.UseHttpsRedirection();
 
+// Serve static files
+app.UseStaticFiles();
+
 // Endpoint
 app.MapGet("/weatherforecast", async (IHttpClientFactory httpClientFactory, string? city = "Berlin") =>
 {
