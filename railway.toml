@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Level1/BasicWebApi/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "dotnet BasicWebApi.dll"
