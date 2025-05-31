@@ -1,6 +1,0 @@
-@AdvancedWebApi_HostAddress = http://localhost:5260
-
-GET {{AdvancedWebApi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
