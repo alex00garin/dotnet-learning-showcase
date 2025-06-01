@@ -3,12 +3,11 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY Level2.WeatherCrud/Level2.WeatherCrud.csproj Level2.WeatherCrud/
-RUN dotnet restore Level2.WeatherCrud/Level2.WeatherCrud.csproj
+COPY Level2.WeatherCrud/Level2.WeatherCrud.csproj ./
+RUN dotnet restore Level2.WeatherCrud.csproj
 
-# Copy everything else and publish
-COPY . .
-WORKDIR /src/Level2.WeatherCrud
+# Copy the rest of the source code and publish
+COPY Level2.WeatherCrud/. ./
 RUN dotnet publish -c Release -o /app/publish
 
 # Use the official ASP.NET runtime for running
