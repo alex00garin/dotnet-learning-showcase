@@ -1,0 +1,23 @@
+# Use the official .NET SDK image for building
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy csproj and restore dependencies
+COPY Level2.WeatherCrud/Level2.WeatherCrud.csproj Level2.WeatherCrud/
+RUN dotnet restore Level2.WeatherCrud/Level2.WeatherCrud.csproj
+
+# Copy everything else and publish
+COPY . .
+WORKDIR /src/Level2.WeatherCrud
+RUN dotnet publish -c Release -o /app/publish
+
+# Use the official ASP.NET runtime for running
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# Bind to the PORT environment variable (provided by Fly)
+ENV ASPNETCORE_URLS=http://*:${PORT:-8080}
+
+# Start the application
+ENTRYPOINT ["dotnet", "Level2.WeatherCrud.dll"] 

@@ -6,6 +6,9 @@
 app = 'your-app-name-muddy-fire-6791'
 primary_region = 'lhr'
 
+[build]
+  dockerfile = "Dockerfile"
+
 [http_service]
   internal_port = 8080
   force_https = true
