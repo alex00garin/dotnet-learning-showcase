@@ -17,10 +17,10 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Build and Test AdvancedWebApi
+    - name: Build and Test WeatherCrud
       run: |
-        dotnet build Level2/AdvancedWebApi/AdvancedWebApi.csproj --configuration Release
-        dotnet test Level2/AdvancedWebApi.Tests/AdvancedWebApi.Tests.csproj --configuration Release
+        dotnet build Level2/Level2.WeatherCrud/Level2.WeatherCrud.csproj --configuration Release
+        dotnet test Level2/Level2.WeatherCrud.Tests/Level2.WeatherCrud.Tests.csproj --configuration Release
 
     - name: Install Flyctl
       run: |
