@@ -35,6 +35,8 @@ app.UseHttpsRedirection();
 // Serve static files
 app.UseStaticFiles();
 
+app.MapGet("/", () => "Hello World!");
+
 // Endpoint
 app.MapGet("/weatherforecast", async (IHttpClientFactory httpClientFactory, string? city = "Berlin") =>
 {
