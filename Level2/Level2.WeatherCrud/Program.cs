@@ -9,6 +9,10 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Bind to the port specified by Fly via the PORT environment variable (default 8080)
+        var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+        builder.WebHost.UseUrls($"http://*:{port}");
+
         // Add CORS
         builder.Services.AddCors(options =>
         {
