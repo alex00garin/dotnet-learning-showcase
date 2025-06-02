@@ -15,7 +15,7 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: '8.0.x'
 
     - name: Build and Test WeatherCrud
       run: |
@@ -27,6 +27,10 @@ jobs:
         curl -L https://fly.io/install.sh | sh
         echo "FLYCTL_INSTALL=$HOME/.fly" >> $GITHUB_ENV
         echo "PATH=$HOME/.fly/bin:$PATH" >> $GITHUB_ENV
+
+    - name: Set Database URL Secret
+      run: |
+        flyctl secrets set DATABASE_URL="${{ secrets.DATABASE_URL }}" --config Level2/fly.toml
 
     - name: Deploy to Fly
       env:

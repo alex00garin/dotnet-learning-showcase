@@ -3,7 +3,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'your-app-name-muddy-fire-6791'
+app = 'dotnet-weather-crud'
 primary_region = 'lhr'
 
 [build]
@@ -16,6 +16,10 @@ primary_region = 'lhr'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+
+[[http_service.domains]]
+  name = "api.alexandergarin.com"
+  zone = "alexandergarin.com"
 
 [[vm]]
   memory = '1gb'

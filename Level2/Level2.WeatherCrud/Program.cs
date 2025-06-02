@@ -9,35 +9,46 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Bind to the port specified by Fly via the PORT environment variable (default 8080)
-        var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-        builder.WebHost.UseUrls($"http://*:{port}");
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+        {
+            // Use port 5281 for development (from launchSettings.json) and 8080 for production (Fly.io)
+            if (builder.Environment.IsDevelopment())
+            {
+                serverOptions.ListenAnyIP(5281);
+            }
+            else
+            {
+                serverOptions.ListenAnyIP(8080); // Fly.io default port
+            }
+        });
 
-        // Add CORS
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
-                policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .WithExposedHeaders("Content-Disposition"));
         });
 
-        // Configure JSON serialization
         builder.Services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         });
 
-        var connectionString = builder.Configuration.GetConnectionString("SupabaseDb");
+        // Use environment variable for connection string if available, otherwise use configuration
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+                              builder.Configuration.GetConnectionString("SupabaseDb");
         builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(connectionString));
 
         var app = builder.Build();
 
-        // One-time data insertion (Development only)
         async Task InsertSampleData()
         {
             using var db = new NpgsqlConnection(connectionString);
             await db.OpenAsync();
-            
+
             var sql = """
                 INSERT INTO public.weather_forecasts (id, city, country, date, temperature_c, summary) 
                 VALUES 
@@ -45,20 +56,17 @@ public class Program
                     ('903773be-4dc0-428d-a275-4ef9ecc6272a', 'London', 'UK', '2024-03-20', 20, 'Sunny')
                 ON CONFLICT (id) DO NOTHING;
             """;
-            
+
             await db.ExecuteAsync(sql);
         }
 
-        // Run the data insertion only in Development environment
         if (app.Environment.IsDevelopment())
         {
             _ = InsertSampleData();
         }
 
-        // Enable CORS
         app.UseCors();
 
-        // Health check endpoint
         app.MapGet("/health", () => Results.Text("Healthy"));
 
         app.MapGet("/", () => "Hello World!");
@@ -137,4 +145,3 @@ record WeatherForecastRecord(
     string summary
 );
 record UpdateSummaryRequest(string Summary);
-
