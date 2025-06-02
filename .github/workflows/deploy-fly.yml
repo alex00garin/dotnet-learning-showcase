@@ -1,4 +1,4 @@
-name: Deploy Level 2 to Fly.io
+name: Deploy to Fly.io
 
 on:
   push:
@@ -29,6 +29,8 @@ jobs:
         echo "PATH=$HOME/.fly/bin:$PATH" >> $GITHUB_ENV
 
     - name: Set Database URL Secret
+      env:
+        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       run: |
         flyctl secrets set DATABASE_URL="${{ secrets.DATABASE_URL }}" --config Level2/fly.toml
 
