@@ -1,20 +1,21 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
+# Use the official .NET SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["Level1/BasicWebApi/BasicWebApi.csproj", "Level1/BasicWebApi/"]
-RUN dotnet restore "Level1/BasicWebApi/BasicWebApi.csproj"
+
+# Copy csproj and restore dependencies
+COPY ["DotnetLearningShowcase.csproj", "./"]
+RUN dotnet restore "DotnetLearningShowcase.csproj"
+
+# Copy the rest of the source code and publish
 COPY . .
-WORKDIR "/src/Level1/BasicWebApi"
-RUN dotnet build "BasicWebApi.csproj" -c Release -o /app/build
+RUN dotnet publish "DotnetLearningShowcase.csproj" -c Release -o /app/publish
 
-FROM build AS publish
-RUN dotnet publish "BasicWebApi.csproj" -c Release -o /app/publish
-
-FROM base AS final
+# Use the official ASP.NET runtime for running
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BasicWebApi.dll"] 
+COPY --from=build /app/publish .
+
+# Bind to the PORT environment variable (Fly.io default is 8080)
+ENV ASPNETCORE_URLS=http://*:${PORT:-8080}
+
+ENTRYPOINT ["dotnet", "DotnetLearningShowcase.dll"] 

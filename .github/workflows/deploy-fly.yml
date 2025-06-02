@@ -2,7 +2,7 @@ name: Deploy to Fly.io
 
 on:
   push:
-    branches: [ dev, main ]
+    branches: [ main, dev ]
 
 jobs:
   build-and-deploy:
@@ -17,10 +17,8 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Build and Test WeatherCrud
-      run: |
-        dotnet build Level2/Level2.WeatherCrud/Level2.WeatherCrud.csproj --configuration Release
-        dotnet test Level2/Level2.WeatherCrud.Tests/Level2.WeatherCrud.Tests.csproj --configuration Release
+    - name: Build
+      run: dotnet build DotnetLearningShowcase.csproj --configuration Release
 
     - name: Install Flyctl
       run: |
@@ -28,26 +26,18 @@ jobs:
         echo "FLYCTL_INSTALL=$HOME/.fly" >> $GITHUB_ENV
         echo "PATH=$HOME/.fly/bin:$PATH" >> $GITHUB_ENV
 
-    - name: Check if app exists and create if needed
-      env:
-        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-      run: |
-        if ! flyctl apps list | grep -q "dotnet-weather-crud"; then
-          echo "App does not exist, creating..."
-          flyctl apps create dotnet-weather-crud
-        else
-          echo "App already exists"
-        fi
-
     - name: Set Database URL Secret
+      if: success()
       env:
         FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       run: |
-        flyctl secrets set DATABASE_URL="${{ secrets.DATABASE_URL }}" --config Level2/fly.toml --app dotnet-weather-crud
+        flyctl secrets set DATABASE_URL="${{ secrets.DATABASE_URL }}" --config fly.toml --app dotnet-learning-showcase
 
     - name: Deploy to Fly
       env:
         FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       run: |
-        cd $GITHUB_WORKSPACE
-        flyctl deploy --config Level2/fly.toml --remote-only --app dotnet-weather-crud 
+        if ! flyctl apps list | grep -q "dotnet-learning-showcase"; then
+          flyctl apps create dotnet-learning-showcase
+        fi
+        flyctl deploy --config fly.toml --app dotnet-learning-showcase --remote-only 
