@@ -6,15 +6,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure Kestrel for different environments
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
-    // Use default ports for development and 8080 for production (Fly.io)
-    if (builder.Environment.IsDevelopment())
+    // Use port 8080 in production (Fly.io default)
+    if (!builder.Environment.IsDevelopment())
     {
-        // Default ports from Properties/launchSettings.json will be used
+        serverOptions.ListenAnyIP(8080);
     }
-    else
-    {
-        serverOptions.ListenAnyIP(8080); // Fly.io default port
-    }
+    // Development uses default ports from Properties/launchSettings.json
 });
 
 // Add services using extension methods
