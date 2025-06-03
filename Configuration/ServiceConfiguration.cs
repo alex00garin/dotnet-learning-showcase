@@ -49,6 +49,7 @@ public static class ServiceConfiguration
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         });
 
         return services;
