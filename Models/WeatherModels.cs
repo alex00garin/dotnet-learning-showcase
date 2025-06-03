@@ -12,12 +12,12 @@ public record ForecastDto(DateOnly Date, int TemperatureC, string Summary);
 public record WeatherSaveRequest(string City, string Country, List<ForecastDto> Forecasts);
 
 public record WeatherForecastRecord(
-    Guid Id,
-    string City,
-    string Country,
-    DateTime Date,
-    int TemperatureC,
-    string Summary
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("city")] string City,
+    [property: JsonPropertyName("country")] string Country,
+    [property: JsonPropertyName("date")] DateTime Date,
+    [property: JsonPropertyName("temperatureC")] int TemperatureC,
+    [property: JsonPropertyName("summary")] string Summary
 );
 
 public record UpdateSummaryRequest(string Summary);

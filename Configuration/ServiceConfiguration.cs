@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using DotnetLearningShowcase.Data;
 using DotnetLearningShowcase.Services;
+using Microsoft.AspNetCore.Http.Json;
 
 namespace DotnetLearningShowcase.Configuration;
 
@@ -44,8 +45,16 @@ public static class ServiceConfiguration
             });
         });
 
-        // JSON configuration
+        // JSON configuration for HTTP endpoints
         services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        });
+
+        // JSON configuration for general serialization
+        services.Configure<JsonOptions>(options =>
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
