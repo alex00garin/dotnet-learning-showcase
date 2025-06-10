@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using DotnetLearningShowcase.Data;
+using DotnetLearningShowcase.Models;
 using DotnetLearningShowcase.Services;
 using Microsoft.AspNetCore.Http.Json;
 
@@ -12,10 +13,16 @@ public static class ServiceConfiguration
         // Register HTTP clients
         services.AddHttpClient<IGeocodingService, GeocodingService>();
         services.AddHttpClient<IWeatherApiService, WeatherApiService>();
+        services.AddHttpClient(); // For autocomplete data sources
 
         // Register services
         services.AddScoped<IWeatherService, WeatherService>();
         services.AddScoped<IWeatherRepository, WeatherRepository>();
+        
+        // Register autocomplete services
+        services.AddScoped<IAutocompleteService, AutocompleteService>();
+        services.AddScoped<IAutocompleteDataSource<object>, CitiesDataSource>();
+        services.AddScoped<IAutocompleteDataSource<object>, CountriesDataSource>();
 
         return services;
     }

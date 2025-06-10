@@ -36,14 +36,27 @@ app.MapGet("/health", () => Results.Ok("Healthy"))
 // Map endpoint groups
 app.MapLevel1Endpoints();
 app.MapLevel2Endpoints();
+app.MapLevel3Endpoints();
 
 // Start the application
 Console.WriteLine("\nAvailable Endpoints:");
+Console.WriteLine("=== Level 1 - Weather API ===");
 Console.WriteLine("GET /level1/weatherforecast?city={cityName}");
+Console.WriteLine("GET /level1/weatherforecast/smart?city={cityName} (with autocomplete)");
+Console.WriteLine("");
+Console.WriteLine("=== Level 2 - Database CRUD ===");
 Console.WriteLine("GET /level2/weatherforecast/history/{city}");
+Console.WriteLine("GET /level2/weatherforecast/history/smart/{city} (with fuzzy matching)");
+Console.WriteLine("POST /level2/weatherforecast/bulk (multiple cities with autocomplete)");
 Console.WriteLine("POST /level2/weatherforecast/save");
 Console.WriteLine("PUT /level2/weatherforecast/update/{id}");
 Console.WriteLine("DELETE /level2/weatherforecast/delete/{id}");
+Console.WriteLine("");
+Console.WriteLine("=== Level 3 - Autocomplete Service ===");
+Console.WriteLine("GET /level3/cities/autocomplete?query={partialCityName}");
+Console.WriteLine("POST /level3/autocomplete");
+Console.WriteLine("GET /level3/datasources");
+Console.WriteLine("");
 Console.WriteLine("GET /health");
 
 app.Run();

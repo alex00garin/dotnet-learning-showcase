@@ -1,3 +1,4 @@
+using DotnetLearningShowcase.Models;
 using DotnetLearningShowcase.Services;
 
 namespace DotnetLearningShowcase.Endpoints;
@@ -22,5 +23,37 @@ public static class Level1Endpoints
             return Results.Ok(result);
         })
         .WithName("Level1_GetWeatherForecast");
+
+        // Enhanced endpoint with city suggestions for invalid cities
+        level1.MapGet("/weatherforecast/smart", async (
+            IWeatherService weatherService, 
+            IAutocompleteService autocompleteService, 
+            string? city = "Berlin") =>
+        {
+            var result = await weatherService.GetWeatherForecastAsync(city);
+            
+            if (result != null)
+            {
+                return Results.Ok(new
+                {
+                    weather = result,
+                    cityFound = true,
+                    suggestions = (List<AutocompleteItem>?)null
+                });
+            }
+
+            // If city not found, provide autocomplete suggestions
+            var suggestions = await autocompleteService.SearchCitiesAsync(city ?? "", 5);
+            
+            return Results.NotFound(new
+            {
+                message = $"City '{city}' not found.",
+                cityFound = false,
+                suggestions = suggestions.Results,
+                hint = "Try one of the suggested cities or use /level3/cities/autocomplete for more options"
+            });
+        })
+        .WithName("Level1_SmartWeatherForecast")
+        .WithSummary("Weather forecast with intelligent city suggestions when city not found");
     }
 } 

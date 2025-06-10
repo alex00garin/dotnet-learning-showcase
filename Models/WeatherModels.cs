@@ -24,4 +24,6 @@ public record UpdateSummaryRequest(string Summary);
 
 public record WeatherApiResponse(string Location, WeatherForecast[] Forecasts);
 
-public record LocationData(double Latitude, double Longitude, string Name, string Country); 
+public record LocationData(double Latitude, double Longitude, string Name, string Country);
+
+public record BulkWeatherRequest(List<string> Cities); 
