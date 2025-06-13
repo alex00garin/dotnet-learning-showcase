@@ -82,6 +82,161 @@ public class WeatherEndpointsTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
+    public async Task Level1_HourlyWeatherForecast_WithValidCity_ReturnsOk()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly?city=Berlin");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        hourlyResponse.Should().NotBeNull();
+        hourlyResponse!.Location.Should().Contain("Berlin");
+        hourlyResponse.HourlyForecasts.Should().NotBeEmpty();
+        hourlyResponse.HourlyForecasts.Should().HaveCount(24); // Should have 24 hours for today
+        
+        // Verify each forecast has required properties
+        var firstForecast = hourlyResponse.HourlyForecasts.First();
+        firstForecast.TemperatureC.Should().BeGreaterThan(-50).And.BeLessThan(60);
+        firstForecast.WeatherDescription.Should().NotBeNullOrEmpty();
+        firstForecast.TemperatureF.Should().BeGreaterThan(-50).And.BeLessThan(140);
+    }
+
+    [Fact]
+    public async Task Level1_HourlyWeatherForecast_WithInvalidCity_ReturnsNotFound()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly?city=NonexistentCity12345");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Level1_HourlyWeatherForecast_WithoutCity_UsesDefaultCity()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        hourlyResponse.Should().NotBeNull();
+        hourlyResponse!.Location.Should().Contain("Berlin"); // Default city
+        hourlyResponse.HourlyForecasts.Should().HaveCount(24);
+    }
+
+    [Fact]
+    public async Task Level1_SmartHourlyWeatherForecast_WithValidCity_ReturnsOkWithWeatherData()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly/smart?city=Berlin");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+
+        root.TryGetProperty("weather", out var weatherProp).Should().BeTrue();
+        root.TryGetProperty("cityFound", out var cityFoundProp).Should().BeTrue();
+        cityFoundProp.GetBoolean().Should().BeTrue();
+
+        weatherProp.TryGetProperty("location", out var locationProp).Should().BeTrue();
+        locationProp.GetString().Should().Contain("Berlin");
+    }
+
+    [Fact]
+    public async Task Level1_SmartHourlyWeatherForecast_WithInvalidCity_ReturnsNotFoundWithSuggestions()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly/smart?city=NotACity");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+
+        root.TryGetProperty("message", out var messageProp).Should().BeTrue();
+        messageProp.GetString().Should().Contain("NotACity");
+        
+        root.TryGetProperty("cityFound", out var cityFoundProp).Should().BeTrue();
+        cityFoundProp.GetBoolean().Should().BeFalse();
+        
+        root.TryGetProperty("hint", out var hintProp).Should().BeTrue();
+        hintProp.GetString().Should().Contain("autocomplete");
+    }
+
+    [Fact]
+    public async Task Level1_SmartHourlyWeatherForecast_WithPartialCityName_FindsCityAndReturnsWeather()
+    {
+        // Act
+        var response = await _client.GetAsync("/level1/weatherforecast/hourly/smart?city=Lond");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+
+        root.TryGetProperty("weather", out var weatherProp).Should().BeTrue();
+        root.TryGetProperty("cityFound", out var cityFoundProp).Should().BeTrue();
+        cityFoundProp.GetBoolean().Should().BeTrue();
+
+        weatherProp.TryGetProperty("location", out var locationProp).Should().BeTrue();
+        locationProp.GetString().Should().Contain("London");
+    }
+
+    [Theory]
+    [InlineData("Tokyo")]
+    [InlineData("Paris")]
+    [InlineData("Sydney")]
+    [InlineData("Cairo")]
+    public async Task Level1_HourlyWeatherForecast_WithDifferentCities_ReturnsValidData(string city)
+    {
+        // Act
+        var response = await _client.GetAsync($"/level1/weatherforecast/hourly?city={city}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        hourlyResponse.Should().NotBeNull();
+        hourlyResponse!.Location.Should().Contain(city);
+        hourlyResponse.HourlyForecasts.Should().HaveCount(24);
+        
+        // Verify data quality
+        foreach (var forecast in hourlyResponse.HourlyForecasts)
+        {
+            forecast.TemperatureC.Should().BeGreaterThan(-60).And.BeLessThan(60);
+            forecast.Precipitation.Should().BeGreaterOrEqualTo(0);
+            forecast.WeatherCode.Should().BeGreaterOrEqualTo(0);
+            forecast.WeatherDescription.Should().NotBeNullOrEmpty();
+        }
+    }
+
+    [Fact]
     public async Task Level2_SaveWeatherForecast_ReturnsSuccess()
     {
         // Arrange

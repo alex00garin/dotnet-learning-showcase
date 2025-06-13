@@ -26,4 +26,39 @@ public record WeatherApiResponse(string Location, WeatherForecast[] Forecasts);
 
 public record LocationData(double Latitude, double Longitude, string Name, string Country);
 
-public record BulkWeatherRequest(List<string> Cities); 
+public record BulkWeatherRequest(List<string> Cities);
+
+// New models for hourly weather forecasts
+public record HourlyWeatherForecast(
+    DateTime Time,
+    double TemperatureC,
+    double Precipitation,
+    int WeatherCode,
+    double? WindSpeed = null,
+    double? Humidity = null,
+    double? ApparentTemperature = null
+)
+{
+    public double TemperatureF => 32 + (TemperatureC * 9 / 5);
+    public string WeatherDescription => GetWeatherDescription(WeatherCode);
+    
+    private static string GetWeatherDescription(int code) => code switch
+    {
+        0 => "Clear sky",
+        1 => "Mainly clear",
+        2 => "Partly cloudy",
+        3 => "Overcast",
+        45 or 48 => "Foggy",
+        51 or 53 or 55 => "Drizzle",
+        61 or 63 or 65 => "Rain",
+        71 or 73 or 75 => "Snow",
+        80 or 81 or 82 => "Rain showers",
+        95 => "Thunderstorm",
+        _ => "Unknown"
+    };
+}
+
+public record HourlyWeatherResponse(
+    string Location,
+    HourlyWeatherForecast[] HourlyForecasts
+); 

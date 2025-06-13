@@ -35,6 +35,22 @@ public class WeatherService : IWeatherService
         );
     }
 
+    public async Task<HourlyWeatherResponse?> GetHourlyWeatherForecastAsync(string? city = "Berlin")
+    {
+        var location = await _geocodingService.GetLocationAsync(city ?? "Berlin");
+        if (location == null)
+        {
+            return null;
+        }
+
+        var hourlyForecasts = await _weatherApiService.GetHourlyForecastsAsync(location);
+        
+        return new HourlyWeatherResponse(
+            $"{location.Name}, {location.Country}",
+            hourlyForecasts
+        );
+    }
+
     public async Task SaveForecastAsync(WeatherSaveRequest request)
     {
         await _weatherRepository.SaveForecastsAsync(request.City, request.Country, request.Forecasts);
