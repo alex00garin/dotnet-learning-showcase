@@ -91,21 +91,29 @@ public class WeatherEndpointsTests : IClassFixture<WebApplicationFactory<Program
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
-        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherComparisonResponse>(content, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
         hourlyResponse.Should().NotBeNull();
         hourlyResponse!.Location.Should().Contain("Berlin");
-        hourlyResponse.HourlyForecasts.Should().NotBeEmpty();
-        hourlyResponse.HourlyForecasts.Should().HaveCount(24); // Should have 24 hours for today
+        hourlyResponse.TodayForecasts.Should().NotBeEmpty();
+        hourlyResponse.TodayForecasts.Should().HaveCount(24); // Should have 24 hours for today
+        hourlyResponse.YesterdayForecasts.Should().NotBeEmpty();
+        hourlyResponse.YesterdayForecasts.Should().HaveCount(24); // Should have 24 hours for yesterday
+        hourlyResponse.Comparison.Should().NotBeNull();
+        hourlyResponse.Comparison.ComparisonText.Should().NotBeNullOrEmpty();
         
         // Verify each forecast has required properties
-        var firstForecast = hourlyResponse.HourlyForecasts.First();
-        firstForecast.TemperatureC.Should().BeGreaterThan(-50).And.BeLessThan(60);
-        firstForecast.WeatherDescription.Should().NotBeNullOrEmpty();
-        firstForecast.TemperatureF.Should().BeGreaterThan(-50).And.BeLessThan(140);
+        var firstTodayForecast = hourlyResponse.TodayForecasts.First();
+        firstTodayForecast.TemperatureC.Should().BeGreaterThan(-50).And.BeLessThan(60);
+        firstTodayForecast.WeatherDescription.Should().NotBeNullOrEmpty();
+        firstTodayForecast.TemperatureF.Should().BeGreaterThan(-50).And.BeLessThan(140);
+        
+        var firstYesterdayForecast = hourlyResponse.YesterdayForecasts.First();
+        firstYesterdayForecast.TemperatureC.Should().BeGreaterThan(-50).And.BeLessThan(60);
+        firstYesterdayForecast.WeatherDescription.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -128,14 +136,16 @@ public class WeatherEndpointsTests : IClassFixture<WebApplicationFactory<Program
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
-        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherComparisonResponse>(content, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
         hourlyResponse.Should().NotBeNull();
         hourlyResponse!.Location.Should().Contain("Berlin"); // Default city
-        hourlyResponse.HourlyForecasts.Should().HaveCount(24);
+        hourlyResponse.TodayForecasts.Should().HaveCount(24);
+        hourlyResponse.YesterdayForecasts.Should().HaveCount(24);
+        hourlyResponse.Comparison.Should().NotBeNull();
     }
 
     [Fact]
@@ -217,23 +227,40 @@ public class WeatherEndpointsTests : IClassFixture<WebApplicationFactory<Program
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
-        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherResponse>(content, new JsonSerializerOptions
+        var hourlyResponse = JsonSerializer.Deserialize<HourlyWeatherComparisonResponse>(content, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
         hourlyResponse.Should().NotBeNull();
         hourlyResponse!.Location.Should().Contain(city);
-        hourlyResponse.HourlyForecasts.Should().HaveCount(24);
+        hourlyResponse.TodayForecasts.Should().HaveCount(24);
+        hourlyResponse.YesterdayForecasts.Should().HaveCount(24);
+        hourlyResponse.Comparison.Should().NotBeNull();
         
-        // Verify data quality
-        foreach (var forecast in hourlyResponse.HourlyForecasts)
+        // Verify data quality for today's forecasts
+        foreach (var forecast in hourlyResponse.TodayForecasts)
         {
             forecast.TemperatureC.Should().BeGreaterThan(-60).And.BeLessThan(60);
             forecast.Precipitation.Should().BeGreaterOrEqualTo(0);
             forecast.WeatherCode.Should().BeGreaterOrEqualTo(0);
             forecast.WeatherDescription.Should().NotBeNullOrEmpty();
         }
+        
+        // Verify data quality for yesterday's forecasts
+        foreach (var forecast in hourlyResponse.YesterdayForecasts)
+        {
+            forecast.TemperatureC.Should().BeGreaterThan(-60).And.BeLessThan(60);
+            forecast.Precipitation.Should().BeGreaterOrEqualTo(0);
+            forecast.WeatherCode.Should().BeGreaterOrEqualTo(0);
+            forecast.WeatherDescription.Should().NotBeNullOrEmpty();
+        }
+        
+        // Verify comparison data
+        hourlyResponse.Comparison.TodayAverageTemp.Should().BeGreaterThan(-60).And.BeLessThan(60);
+        hourlyResponse.Comparison.YesterdayAverageTemp.Should().BeGreaterThan(-60).And.BeLessThan(60);
+        hourlyResponse.Comparison.ComparisonText.Should().NotBeNullOrEmpty();
+        hourlyResponse.Comparison.ComparisonText.Should().MatchRegex(@"Today.*(warmer|colder|similar).*yesterday");
     }
 
     [Fact]

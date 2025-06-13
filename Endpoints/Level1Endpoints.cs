@@ -26,7 +26,7 @@ public static class Level1Endpoints
 
         level1.MapGet("/weatherforecast/hourly", async (IWeatherService weatherService, string? city = "Berlin") =>
         {
-            var result = await weatherService.GetHourlyWeatherForecastAsync(city);
+            var result = await weatherService.GetHourlyWeatherComparisonAsync(city);
             
             if (result == null)
             {
@@ -36,8 +36,8 @@ public static class Level1Endpoints
             return Results.Ok(result);
         })
         .WithName("Level1_GetHourlyWeatherForecast")
-        .WithSummary("Get hourly weather forecast for today")
-        .WithDescription("Returns hourly weather data for today including temperature, precipitation, weather conditions, wind speed, and humidity");
+        .WithSummary("Get hourly weather forecast for today with yesterday comparison")
+        .WithDescription("Returns hourly weather data for today including temperature, precipitation, weather conditions, wind speed, humidity, and comparison with yesterday's weather for temperature analysis");
 
         // Enhanced endpoint with city suggestions for invalid cities
         level1.MapGet("/weatherforecast/smart", async (

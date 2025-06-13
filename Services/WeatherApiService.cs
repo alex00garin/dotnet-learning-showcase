@@ -51,10 +51,24 @@ public class WeatherApiService : IWeatherApiService
 
     public async Task<HourlyWeatherForecast[]> GetHourlyForecastsAsync(LocationData location)
     {
+        return await GetHourlyForecastsForDateAsync(location, DateOnly.FromDateTime(DateTime.Today));
+    }
+
+    public async Task<HourlyWeatherForecast[]> GetHourlyForecastsForDateAsync(LocationData location, DateOnly date)
+    {
         try
         {
-            // Request hourly data for today only (forecast_days=1)
-            var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={location.Latitude}&longitude={location.Longitude}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&timezone=auto&forecast_days=1";
+            var startDate = date.ToString("yyyy-MM-dd");
+            var endDate = date.ToString("yyyy-MM-dd");
+            
+            // Use historical API for past dates, forecast API for today and future
+            var isHistorical = date < DateOnly.FromDateTime(DateTime.Today);
+            var baseUrl = isHistorical 
+                ? "https://archive-api.open-meteo.com/v1/archive" 
+                : "https://api.open-meteo.com/v1/forecast";
+            
+            var weatherUrl = $"{baseUrl}?latitude={location.Latitude}&longitude={location.Longitude}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&start_date={startDate}&end_date={endDate}&timezone=auto";
+            
             var weatherResponse = await _httpClient.GetStringAsync(weatherUrl);
 
             using var weatherDoc = JsonDocument.Parse(weatherResponse);
@@ -70,11 +84,12 @@ public class WeatherApiService : IWeatherApiService
 
             var hourlyForecasts = times.Zip(
                 temperatures.Zip(precipitation.Zip(weatherCodes.Zip(windSpeeds.Zip(humidity.Zip(apparentTemp, 
-                    (h, at) => (h.GetDouble(), at.GetDouble())),
-                    (ws, data) => (ws.GetDouble(), data.Item1, data.Item2)),
-                    (wc, data) => (wc.GetInt32(), data.Item1, data.Item2, data.Item3)),
-                    (p, data) => (p.GetDouble(), data.Item1, data.Item2, data.Item3, data.Item4)),
-                    (t, data) => (t.GetDouble(), data.Item1, data.Item2, data.Item3, data.Item4, data.Item5)),
+                    (h, at) => (h.ValueKind == JsonValueKind.Null ? 0.0 : h.GetDouble(), 
+                               at.ValueKind == JsonValueKind.Null ? (double?)null : at.GetDouble())),
+                    (ws, data) => (ws.ValueKind == JsonValueKind.Null ? (double?)null : ws.GetDouble(), data.Item1, data.Item2)),
+                    (wc, data) => (wc.ValueKind == JsonValueKind.Null ? 0 : wc.GetInt32(), data.Item1, data.Item2, data.Item3)),
+                    (p, data) => (p.ValueKind == JsonValueKind.Null ? 0.0 : p.GetDouble(), data.Item1, data.Item2, data.Item3, data.Item4)),
+                    (t, data) => (t.ValueKind == JsonValueKind.Null ? 0.0 : t.GetDouble(), data.Item1, data.Item2, data.Item3, data.Item4, data.Item5)),
                 (time, data) =>
                 {
                     var (temp, precip, weatherCode, windSpeed, humid, apparentTemperature) = data;
@@ -94,7 +109,7 @@ public class WeatherApiService : IWeatherApiService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error getting hourly weather forecast for {location.Name}: {ex.Message}");
+            Console.WriteLine($"Error getting hourly weather forecast for {location.Name} on {date}: {ex.Message}");
             throw;
         }
     }

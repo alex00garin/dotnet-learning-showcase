@@ -6,6 +6,7 @@ public interface IWeatherService
 {
     Task<WeatherApiResponse?> GetWeatherForecastAsync(string? city = "Berlin");
     Task<HourlyWeatherResponse?> GetHourlyWeatherForecastAsync(string? city = "Berlin");
+    Task<HourlyWeatherComparisonResponse?> GetHourlyWeatherComparisonAsync(string? city = "Berlin");
     Task SaveForecastAsync(WeatherSaveRequest request);
     Task<IEnumerable<WeatherForecastRecord>> GetHistoryAsync(string city);
     Task<bool> UpdateSummaryAsync(Guid id, string summary);
@@ -21,4 +22,5 @@ public interface IWeatherApiService
 {
     Task<WeatherForecast[]> GetForecastsAsync(LocationData location);
     Task<HourlyWeatherForecast[]> GetHourlyForecastsAsync(LocationData location);
+    Task<HourlyWeatherForecast[]> GetHourlyForecastsForDateAsync(LocationData location, DateOnly date);
 } 

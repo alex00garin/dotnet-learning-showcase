@@ -61,4 +61,18 @@ public record HourlyWeatherForecast(
 public record HourlyWeatherResponse(
     string Location,
     HourlyWeatherForecast[] HourlyForecasts
+);
+
+public record HourlyWeatherComparisonResponse(
+    string Location,
+    HourlyWeatherForecast[] TodayForecasts,
+    HourlyWeatherForecast[] YesterdayForecasts,
+    WeatherComparison Comparison
+);
+
+public record WeatherComparison(
+    double TodayAverageTemp,
+    double YesterdayAverageTemp,
+    double TemperatureDifference,
+    string ComparisonText
 ); 
