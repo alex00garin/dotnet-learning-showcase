@@ -71,32 +71,40 @@ public class WeatherService : IWeatherService
         var todayForecasts = await todayTask;
         var yesterdayForecasts = await yesterdayTask;
 
-        // Calculate comparison metrics
-        var todayAvgTemp = todayForecasts.Length > 0 ? todayForecasts.Average(f => f.TemperatureC) : 0;
-        var yesterdayAvgTemp = yesterdayForecasts.Length > 0 ? yesterdayForecasts.Average(f => f.TemperatureC) : 0;
-        var tempDifference = todayAvgTemp - yesterdayAvgTemp;
+        // Find current hour comparison
+        var currentHour = DateTime.Now.Hour;
+        var todayCurrentHour = todayForecasts.FirstOrDefault(f => f.Time.Hour == currentHour);
+        var yesterdayCurrentHour = yesterdayForecasts.FirstOrDefault(f => f.Time.Hour == currentHour);
 
-        var comparisonText = tempDifference switch
+        CurrentHourComparison? currentHourComparison = null;
+        
+        if (todayCurrentHour != null && yesterdayCurrentHour != null && 
+            todayCurrentHour.TemperatureC > -900 && yesterdayCurrentHour.TemperatureC > -900)
         {
-            > 2 => $"Today is much warmer than yesterday (+{tempDifference:F1}°C)",
-            > 0.5 => $"Today is warmer than yesterday (+{tempDifference:F1}°C)",
-            < -2 => $"Today is much colder than yesterday ({tempDifference:F1}°C)",
-            < -0.5 => $"Today is colder than yesterday ({tempDifference:F1}°C)",
-            _ => $"Today's temperature is similar to yesterday ({tempDifference:F1}°C difference)"
-        };
+            var tempDiff = todayCurrentHour.TemperatureC - yesterdayCurrentHour.TemperatureC;
+            var comparisonText = tempDiff switch
+            {
+                > 5 => $"Much warmer than yesterday (+{tempDiff:F1}°C)",
+                > 2 => $"Warmer than yesterday (+{tempDiff:F1}°C)",
+                > 0.5 => $"Slightly warmer than yesterday (+{tempDiff:F1}°C)",
+                < -5 => $"Much colder than yesterday ({tempDiff:F1}°C)",
+                < -2 => $"Colder than yesterday ({tempDiff:F1}°C)",
+                < -0.5 => $"Slightly colder than yesterday ({tempDiff:F1}°C)",
+                _ => $"Similar to yesterday ({tempDiff:F1}°C difference)"
+            };
 
-        var comparison = new WeatherComparison(
-            todayAvgTemp,
-            yesterdayAvgTemp,
-            tempDifference,
-            comparisonText
-        );
+            currentHourComparison = new CurrentHourComparison(
+                todayCurrentHour,
+                yesterdayCurrentHour,
+                comparisonText
+            );
+        }
 
         return new HourlyWeatherComparisonResponse(
             $"{location.Name}, {location.Country}",
             todayForecasts,
             yesterdayForecasts,
-            comparison
+            currentHourComparison
         );
     }
 

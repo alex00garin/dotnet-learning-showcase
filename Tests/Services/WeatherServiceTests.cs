@@ -204,6 +204,69 @@ public class WeatherServiceTests
     }
 
     [Fact]
+    public async Task GetHourlyWeatherComparisonAsync_WithValidCity_ReturnsComparisonResponse()
+    {
+        // Arrange
+        var city = "Berlin";
+        var location = new LocationData(52.5200, 13.4050, "Berlin", "Germany");
+        var currentHour = DateTime.Now.Hour;
+        var todayForecasts = new[]
+        {
+            new HourlyWeatherForecast(DateTime.Today.AddHours(currentHour), 20.0, 0.0, 0, 10.0, 60.0, 18.5),
+            new HourlyWeatherForecast(DateTime.Today.AddHours(currentHour + 1), 21.0, 0.1, 1, 12.0, 65.0, 19.5)
+        };
+        var yesterdayForecasts = new[]
+        {
+            new HourlyWeatherForecast(DateTime.Today.AddDays(-1).AddHours(currentHour), 18.0, 0.0, 2, 8.0, 70.0, 16.5),
+            new HourlyWeatherForecast(DateTime.Today.AddDays(-1).AddHours(currentHour + 1), 19.0, 0.2, 3, 9.0, 68.0, 17.5)
+        };
+
+        _geocodingServiceMock
+            .Setup(x => x.GetLocationAsync(city))
+            .ReturnsAsync(location);
+
+        _weatherApiServiceMock
+            .Setup(x => x.GetHourlyForecastsAsync(location))
+            .ReturnsAsync(todayForecasts);
+
+        _weatherApiServiceMock
+            .Setup(x => x.GetHourlyForecastsForDateAsync(location, It.IsAny<DateOnly>()))
+            .ReturnsAsync(yesterdayForecasts);
+
+        // Act
+        var result = await _weatherService.GetHourlyWeatherComparisonAsync(city);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Location.Should().Be("Berlin, Germany");
+        result.TodayForecasts.Should().HaveCount(2);
+        result.YesterdayForecasts.Should().HaveCount(2);
+        result.CurrentHourComparison.Should().NotBeNull();
+        result.CurrentHourComparison!.TodayCurrentHour.Should().NotBeNull();
+        result.CurrentHourComparison.YesterdayCurrentHour.Should().NotBeNull();
+        result.CurrentHourComparison.ComparisonText.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task GetHourlyWeatherComparisonAsync_WithInvalidCity_ReturnsNull()
+    {
+        // Arrange
+        var city = "NonexistentCity";
+
+        _geocodingServiceMock
+            .Setup(x => x.GetLocationAsync(city))
+            .ReturnsAsync((LocationData?)null);
+
+        // Act
+        var result = await _weatherService.GetHourlyWeatherComparisonAsync(city);
+
+        // Assert
+        result.Should().BeNull();
+        _weatherApiServiceMock.Verify(x => x.GetHourlyForecastsAsync(It.IsAny<LocationData>()), Times.Never);
+        _weatherApiServiceMock.Verify(x => x.GetHourlyForecastsForDateAsync(It.IsAny<LocationData>(), It.IsAny<DateOnly>()), Times.Never);
+    }
+
+    [Fact]
     public async Task DeleteForecastAsync_CallsRepository()
     {
         // Arrange

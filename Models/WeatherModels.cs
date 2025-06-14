@@ -67,12 +67,11 @@ public record HourlyWeatherComparisonResponse(
     string Location,
     HourlyWeatherForecast[] TodayForecasts,
     HourlyWeatherForecast[] YesterdayForecasts,
-    WeatherComparison Comparison
+    CurrentHourComparison? CurrentHourComparison
 );
 
-public record WeatherComparison(
-    double TodayAverageTemp,
-    double YesterdayAverageTemp,
-    double TemperatureDifference,
+public record CurrentHourComparison(
+    HourlyWeatherForecast TodayCurrentHour,
+    HourlyWeatherForecast YesterdayCurrentHour,
     string ComparisonText
 ); 

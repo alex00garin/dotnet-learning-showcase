@@ -76,7 +76,7 @@ public static class Level1Endpoints
             IAutocompleteService autocompleteService, 
             string? city = "Berlin") =>
         {
-            var result = await weatherService.GetHourlyWeatherForecastAsync(city);
+            var result = await weatherService.GetHourlyWeatherComparisonAsync(city);
             
             if (result != null)
             {

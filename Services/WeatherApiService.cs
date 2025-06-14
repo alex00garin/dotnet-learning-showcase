@@ -58,16 +58,26 @@ public class WeatherApiService : IWeatherApiService
     {
         try
         {
-            var startDate = date.ToString("yyyy-MM-dd");
-            var endDate = date.ToString("yyyy-MM-dd");
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var daysFromToday = date.DayNumber - today.DayNumber;
             
-            // Use historical API for past dates, forecast API for today and future
-            var isHistorical = date < DateOnly.FromDateTime(DateTime.Today);
-            var baseUrl = isHistorical 
-                ? "https://archive-api.open-meteo.com/v1/archive" 
-                : "https://api.open-meteo.com/v1/forecast";
+            string weatherUrl;
             
-            var weatherUrl = $"{baseUrl}?latitude={location.Latitude}&longitude={location.Longitude}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&start_date={startDate}&end_date={endDate}&timezone=auto";
+            if (daysFromToday >= -5 && daysFromToday <= 16)
+            {
+                // Use Forecast API for recent past (up to 5 days ago) and future (up to 16 days ahead)
+                var pastDays = Math.Max(0, -daysFromToday);
+                var forecastDays = Math.Max(0, daysFromToday + 1);
+                
+                weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={location.Latitude}&longitude={location.Longitude}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&past_days={pastDays}&forecast_days={forecastDays}&timezone=auto";
+            }
+            else
+            {
+                // Use Archive API for dates older than 5 days
+                var startDate = date.ToString("yyyy-MM-dd");
+                var endDate = date.ToString("yyyy-MM-dd");
+                weatherUrl = $"https://archive-api.open-meteo.com/v1/archive?latitude={location.Latitude}&longitude={location.Longitude}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&start_date={startDate}&end_date={endDate}&timezone=auto";
+            }
             
             var weatherResponse = await _httpClient.GetStringAsync(weatherUrl);
 
@@ -94,9 +104,12 @@ public class WeatherApiService : IWeatherApiService
                 {
                     var (temp, precip, weatherCode, windSpeed, humid, apparentTemperature) = data;
                     
+                    // Mark suspicious data: 0°C is likely placeholder data (especially for historical data)
+                    var isSuspiciousData = temp == 0.0 && (humid == 0.0 || weatherCode == 0);
+                    
                     return new HourlyWeatherForecast(
                         DateTime.Parse(time.GetString() ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm")),
-                        temp,
+                        isSuspiciousData ? -999.0 : temp, // Mark suspicious data with impossible temperature
                         precip,
                         weatherCode,
                         windSpeed,
