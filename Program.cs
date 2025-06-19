@@ -27,7 +27,7 @@ app.ConfigureMiddleware();
 await app.InitializeDatabaseAsync();
 
 // Root endpoint
-app.MapGet("/", () => "Dotnet Learning Showcase - Choose /level1 or /level2 routes");
+app.MapGet("/", () => "Dotnet Learning Showcase - Choose /level1, /level2, /level3, or /level4 routes");
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok("Healthy"))
@@ -37,6 +37,8 @@ app.MapGet("/health", () => Results.Ok("Healthy"))
 app.MapLevel1Endpoints();
 app.MapLevel2Endpoints();
 app.MapLevel3Endpoints();
+app.MapLevel4Endpoints();
+app.MapLevel4WeatherDataEndpoints();
 
 // Start the application
 Console.WriteLine("\nAvailable Endpoints:");
@@ -56,6 +58,17 @@ Console.WriteLine("=== Level 3 - Autocomplete Service ===");
 Console.WriteLine("GET /level3/cities/autocomplete?query={partialCityName}");
 Console.WriteLine("POST /level3/autocomplete");
 Console.WriteLine("GET /level3/datasources");
+Console.WriteLine("");
+Console.WriteLine("=== Level 4 - Advanced Pagination ===");
+Console.WriteLine("POST /level4/weather/history/paginated (paginated weather history)");
+Console.WriteLine("POST /level4/autocomplete/paginated (enhanced autocomplete pagination)");
+Console.WriteLine("GET/POST /level4/cities/browse (browse cities with filters)");
+Console.WriteLine("POST /level4/weather/bulk/paginated (bulk operations with batching)");
+Console.WriteLine("GET /level4/pagination/info (pagination metadata helper)");
+Console.WriteLine("");
+Console.WriteLine("=== Level 4 - Real Weather Data ===");
+Console.WriteLine("POST /level4/weather-data/paginated (paginate actual weather records)");
+Console.WriteLine("GET /level4/weather-data/info (view endpoint information)");
 Console.WriteLine("");
 Console.WriteLine("GET /health");
 

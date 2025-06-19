@@ -23,6 +23,9 @@ public static class ServiceConfiguration
         services.AddScoped<IAutocompleteService, AutocompleteService>();
         services.AddScoped<IAutocompleteDataSource<object>, CitiesDataSource>();
         services.AddScoped<IAutocompleteDataSource<object>, CountriesDataSource>();
+        
+        // Register pagination service
+        services.AddScoped<IPaginationService, PaginationService>();
 
         return services;
     }
