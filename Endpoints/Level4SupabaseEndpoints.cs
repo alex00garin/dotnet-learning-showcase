@@ -46,9 +46,12 @@ public static class Level4WeatherDataEndpoints
                 
             if (request.MaxTemperature.HasValue)
                 filteredRecords = filteredRecords.Where(r => r.TemperatureC <= request.MaxTemperature.Value);
+
+            // Apply sorting
+            var sortedRecords = ApplyWeatherDataSorting(filteredRecords, request.SortBy ?? "date", request.SortDirection);
             
             // Use the universal pagination service to paginate the results
-            var result = paginationService.PaginateCollection(filteredRecords, request);
+            var result = paginationService.PaginateCollection(sortedRecords, request);
             
             return Results.Ok(result);
         })
@@ -86,6 +89,33 @@ public static class Level4WeatherDataEndpoints
         })
         .WithName("GetWeatherDataInfo")
         .WithSummary("Get information about the weather data pagination endpoint");
+    }
+
+    // Helper method for sorting weather data records
+    private static IEnumerable<WeatherForecastRecord> ApplyWeatherDataSorting(
+        IEnumerable<WeatherForecastRecord> records,
+        string sortBy,
+        SortDirection direction)
+    {
+        return sortBy.ToLowerInvariant() switch
+        {
+            "date" => direction == SortDirection.Ascending 
+                ? records.OrderBy(x => x.Date) 
+                : records.OrderByDescending(x => x.Date),
+            "temperature" or "temperaturec" => direction == SortDirection.Ascending 
+                ? records.OrderBy(x => x.TemperatureC) 
+                : records.OrderByDescending(x => x.TemperatureC),
+            "city" => direction == SortDirection.Ascending 
+                ? records.OrderBy(x => x.City) 
+                : records.OrderByDescending(x => x.City),
+            "country" => direction == SortDirection.Ascending 
+                ? records.OrderBy(x => x.Country) 
+                : records.OrderByDescending(x => x.Country),
+            "summary" => direction == SortDirection.Ascending 
+                ? records.OrderBy(x => x.Summary) 
+                : records.OrderByDescending(x => x.Summary),
+            _ => records.OrderByDescending(x => x.Date) // Default sort by date descending
+        };
     }
 }
 
