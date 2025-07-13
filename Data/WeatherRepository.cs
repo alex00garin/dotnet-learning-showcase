@@ -22,9 +22,9 @@ public class WeatherRepository : IWeatherRepository
             using var db = new NpgsqlConnection(_connectionString);
             await db.OpenAsync();
 
-            // Ensure the mock_weather_data table exists (our main data source)
+            // Ensure the weather_forecasts table exists (Level 2 table)
             var createTableSql = @"
-                CREATE TABLE IF NOT EXISTS public.mock_weather_data (
+                CREATE TABLE IF NOT EXISTS public.weather_forecasts (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     city TEXT NOT NULL,
                     country TEXT NOT NULL,
@@ -35,7 +35,7 @@ public class WeatherRepository : IWeatherRepository
             ";
             await db.ExecuteAsync(createTableSql);
 
-            // No hardcoded seed data - we'll fetch from your existing mock_weather_data table
+            // No hardcoded seed data - Level 2 uses weather_forecasts table
             Console.WriteLine("Database initialized successfully.");
         }
         catch (Exception ex)
@@ -48,8 +48,8 @@ public class WeatherRepository : IWeatherRepository
     public async Task SaveForecastsAsync(string city, string country, IEnumerable<ForecastDto> forecasts)
     {
         var sql = @"
-            INSERT INTO public.mock_weather_data (city, country, date, temperature_c, summary)
-            VALUES (@City, @Country, @Date, @TemperatureC, @Summary)
+            INSERT INTO public.weather_forecasts (id, city, country, date, temperature_c, summary)
+            VALUES (@Id, @City, @Country, @Date, @TemperatureC, @Summary)
         ";
 
         using var db = new NpgsqlConnection(_connectionString);
@@ -59,6 +59,7 @@ public class WeatherRepository : IWeatherRepository
         {
             await db.ExecuteAsync(sql, new
             {
+                Id = Guid.NewGuid(),
                 City = city,
                 Country = country,
                 Date = forecast.Date.ToDateTime(TimeOnly.MinValue),
@@ -78,7 +79,7 @@ public class WeatherRepository : IWeatherRepository
                 date,
                 temperature_c AS TemperatureC,
                 summary
-            FROM public.mock_weather_data 
+            FROM public.weather_forecasts 
             WHERE LOWER(city) = LOWER(@City)
             ORDER BY date
         ";
@@ -89,7 +90,7 @@ public class WeatherRepository : IWeatherRepository
 
     public async Task<bool> UpdateSummaryAsync(Guid id, string summary)
     {
-        var sql = "UPDATE public.mock_weather_data SET summary = @Summary WHERE id = @Id";
+        var sql = "UPDATE public.weather_forecasts SET summary = @Summary WHERE id = @Id";
         
         using var db = new NpgsqlConnection(_connectionString);
         var affected = await db.ExecuteAsync(sql, new { Id = id, Summary = summary });
@@ -98,7 +99,7 @@ public class WeatherRepository : IWeatherRepository
 
     public async Task<bool> DeleteForecastAsync(Guid id)
     {
-        var sql = "DELETE FROM public.mock_weather_data WHERE id = @Id";
+        var sql = "DELETE FROM public.weather_forecasts WHERE id = @Id";
         
         using var db = new NpgsqlConnection(_connectionString);
         var affected = await db.ExecuteAsync(sql, new { Id = id });
@@ -115,7 +116,7 @@ public class WeatherRepository : IWeatherRepository
                 date,
                 temperature_c AS TemperatureC,
                 summary
-            FROM public.mock_weather_data 
+            FROM public.weather_forecasts 
             ORDER BY date DESC, city
         ";
 
