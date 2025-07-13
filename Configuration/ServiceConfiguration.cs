@@ -43,10 +43,26 @@ public static class ServiceConfiguration
             });
         });
 
-        // Configure CORS
+        // Configure CORS with specific origins and better error handling
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins(
+                        "https://www.alexandergarin.com",
+                        "https://alexandergarin.com",
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://localhost:8080"
+                    )
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .WithExposedHeaders("Content-Disposition");
+            });
+            
+            // Fallback policy for development
+            options.AddPolicy("AllowAll", policy =>
             {
                 policy.AllowAnyOrigin()
                       .AllowAnyMethod()
@@ -87,7 +103,47 @@ public static class ServiceConfiguration
             });
         }
 
-        app.UseCors();
+        // Configure CORS before other middleware to ensure headers are set on all responses
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseCors("AllowAll");
+        }
+        else
+        {
+            app.UseCors(); // Use default policy
+        }
+
+        // Add global error handling middleware to ensure CORS headers on error responses
+        app.Use(async (context, next) =>
+        {
+            try
+            {
+                await next();
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "Unhandled exception occurred");
+
+                // Ensure CORS headers are present on error responses
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json";
+                    
+                    var errorResponse = new
+                    {
+                        error = "Internal server error",
+                        message = app.Environment.IsDevelopment() ? ex.Message : "An error occurred processing your request",
+                        timestamp = DateTime.UtcNow
+                    };
+                    
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorResponse));
+                }
+            }
+        });
+
         app.UseHttpsRedirection();
         app.UseStaticFiles();
 

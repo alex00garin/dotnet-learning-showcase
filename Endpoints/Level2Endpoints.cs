@@ -12,12 +12,71 @@ public static class Level2Endpoints
 
         level2.MapGet("/", () => "Level 2 - Weather CRUD");
 
-        level2.MapPost("/weatherforecast/save", async (IWeatherService weatherService, WeatherSaveRequest request) =>
+        level2.MapPost("/weatherforecast/save", async (
+            IWeatherService weatherService, 
+            WeatherSaveRequest request,
+            ILogger<Program> logger) =>
         {
-            await weatherService.SaveForecastAsync(request);
-            return Results.Text("Saved");
+            try
+            {
+                // Validate request
+                if (string.IsNullOrWhiteSpace(request.City))
+                {
+                    logger.LogWarning("Save request received with empty city name");
+                    return Results.BadRequest(new { error = "City name is required" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Country))
+                {
+                    logger.LogWarning("Save request received with empty country name");
+                    return Results.BadRequest(new { error = "Country name is required" });
+                }
+
+                if (request.Forecasts == null || !request.Forecasts.Any())
+                {
+                    logger.LogWarning("Save request received with no forecasts");
+                    return Results.BadRequest(new { error = "At least one forecast is required" });
+                }
+
+                // Validate forecast data
+                for (int i = 0; i < request.Forecasts.Count; i++)
+                {
+                    var forecast = request.Forecasts[i];
+                    if (string.IsNullOrWhiteSpace(forecast.Summary))
+                    {
+                        logger.LogWarning("Save request received with empty summary at index {Index}", i);
+                        return Results.BadRequest(new { error = $"Summary is required for forecast at index {i}" });
+                    }
+                }
+
+                logger.LogInformation("Saving weather forecast for city: {City}, country: {Country}, forecasts: {Count}", 
+                    request.City, request.Country, request.Forecasts.Count);
+
+                await weatherService.SaveForecastAsync(request);
+                
+                logger.LogInformation("Successfully saved weather forecast for {City}", request.City);
+                return Results.Ok(new { message = "Saved", city = request.City, count = request.Forecasts.Count });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error saving weather forecast for city: {City}, country: {Country}", 
+                    request.City, request.Country);
+                
+                return Results.Problem(
+                    title: "Error saving weather forecast",
+                    detail: ex.Message,
+                    statusCode: 500,
+                    type: "https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.1"
+                );
+            }
         })
-        .WithName("Level2_SaveWeatherForecast");
+        .WithName("Level2_SaveWeatherForecast")
+        .WithSummary("Save weather forecast data")
+        .WithDescription("Saves weather forecast data to the database. Requires city, country, and forecast data.")
+        .Accepts<WeatherSaveRequest>("application/json")
+        .Produces<object>(200)
+        .Produces<object>(400)
+        .Produces<ProblemDetails>(500);
 
         level2.MapGet("/weatherforecast/history/{city}", async (IWeatherService weatherService, string city) =>
         {
