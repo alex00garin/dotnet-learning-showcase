@@ -18,6 +18,7 @@ public static class ServiceConfiguration
         // Register services
         services.AddScoped<IWeatherService, WeatherService>();
         services.AddScoped<IWeatherRepository, WeatherRepository>();
+        services.AddScoped<IMockWeatherRepository, MockWeatherRepository>();
         
         // Register autocomplete services
         services.AddScoped<IAutocompleteService, AutocompleteService>();
@@ -156,10 +157,12 @@ public static class ServiceConfiguration
         {
             using var scope = app.Services.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IWeatherRepository>();
+            var mockRepository = scope.ServiceProvider.GetRequiredService<IMockWeatherRepository>();
             
             try
             {
                 await repository.InitializeDatabaseAsync();
+                await mockRepository.InitializeMockWeatherDataAsync();
                 Console.WriteLine("Database initialized successfully.");
             }
             catch (Exception ex)

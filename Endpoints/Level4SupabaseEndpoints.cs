@@ -17,11 +17,11 @@ public static class Level4WeatherDataEndpoints
         // Enhanced weather data pagination - shows all 100 records from Supabase mock_weather_data table
         group.MapPost("/paginated", async (
             WeatherDataPaginationRequest request,
-            IWeatherRepository weatherRepository,
+            IMockWeatherRepository mockWeatherRepository,
             IPaginationService paginationService) =>
         {
             // Get all records from the mock_weather_data table
-            var allRecords = await weatherRepository.GetAllRecordsAsync();
+            var allRecords = await mockWeatherRepository.GetAllMockWeatherDataAsync();
             
             // Apply filtering if specified
             var filteredRecords = allRecords.AsEnumerable();
