@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DotnetLearningShowcase.Models;
 using DotnetLearningShowcase.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DotnetLearningShowcase.Endpoints;
 
